@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
-	log "github.com/apache/pulsar/pulsar-function-go/logutil"
+	log "github.com/kafkaesque-io/pulsar-go-function-template/src/logutil"
 )
 
 type LogAppender struct {

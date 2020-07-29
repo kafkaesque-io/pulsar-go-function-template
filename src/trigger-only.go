@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/kafkaesque-io/pulsar-go-function-template/src/pb"
+	"github.com/kafkaesque-io/pulsar-go-function-template/src/pf"
 )
 
 // HandleExclamation handles exlamation
