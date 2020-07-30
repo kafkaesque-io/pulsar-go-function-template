@@ -21,10 +21,12 @@ package pf
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"math"
 	"time"
 
-	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/apache/pulsar-client-go/pulsar"
 	log "github.com/kafkaesque-io/pulsar-go-function-template/src/logutil"
 	"github.com/kafkaesque-io/pulsar-go-function-template/src/pb"
 )
@@ -58,6 +60,8 @@ func (gi *goInstance) startFunction(function function) error {
 		log.Errorf("setup producer failed, error is:%v", err)
 		return err
 	}
+
+	fmt.Println("client and producer have been set up successfully.")
 	channel, err := gi.setupConsumer()
 	if err != nil {
 		log.Errorf("setup consumer failed, error is:%v", err)
@@ -111,11 +115,20 @@ CLOSE:
 }
 
 func (gi *goInstance) setupClient() error {
+	fmt.Println("set up pulsar client by golang function")
+	content, err := ioutil.ReadFile("/pulsar/token-superuser-stripped.jwt")
+	if err != nil {
+		fmt.Printf("read token file error %v ", err)
+	}
+	tokenStr := string(content)
+	token := pulsar.NewAuthenticationToken(tokenStr)
+	fmt.Printf("token found with length %d", len(tokenStr))
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
-
-		URL: gi.context.instanceConf.pulsarServiceURL,
+		URL:            gi.context.instanceConf.pulsarServiceURL,
+		Authentication: token,
 	})
 	if err != nil {
+		fmt.Printf("create client error:%v", err)
 		log.Errorf("create client error:%v", err)
 		return err
 	}
@@ -124,8 +137,10 @@ func (gi *goInstance) setupClient() error {
 }
 
 func (gi *goInstance) setupProducer() (err error) {
+	fmt.Println("set up producer")
 	if gi.context.instanceConf.funcDetails.Sink.Topic != "" && len(gi.context.instanceConf.funcDetails.Sink.Topic) > 0 {
 		log.Debugf("Setting up producer for topic %s", gi.context.instanceConf.funcDetails.Sink.Topic)
+		fmt.Printf("Setting up producer for topic %s", gi.context.instanceConf.funcDetails.Sink.Topic)
 		properties := getProperties(getDefaultSubscriptionName(
 			gi.context.instanceConf.funcDetails.Tenant,
 			gi.context.instanceConf.funcDetails.Namespace,
@@ -134,18 +149,17 @@ func (gi *goInstance) setupProducer() (err error) {
 			Topic:                   gi.context.instanceConf.funcDetails.Sink.Topic,
 			Properties:              properties,
 			CompressionType:         pulsar.LZ4,
-			BlockIfQueueFull:        true,
-			Batching:                true,
 			BatchingMaxPublishDelay: time.Millisecond * 10,
 			// set send timeout to be infinity to prevent potential deadlock with consumer
 			// that might happen when consumer is blocked due to unacked messages
-			SendTimeout: 0,
 		})
 		if err != nil {
 			log.Errorf("create producer error:%s", err.Error())
+			fmt.Printf("create producer error:%s", err.Error())
 			return err
 		}
 	}
+	fmt.Println("producer is set up")
 	return nil
 }
 
@@ -214,9 +228,11 @@ func (gi *goInstance) setupConsumer() (chan pulsar.ConsumerMessage, error) {
 		}
 
 		if err != nil {
+			fmt.Printf("create consumer error:%s", err.Error())
 			log.Errorf("create consumer error:%s", err.Error())
 			return nil, err
 		}
+		fmt.Printf("consumer subscription set up properly against the topic %s", topic)
 		gi.consumers[topic] = consumer
 		gi.context.inputTopics = append(gi.context.inputTopics, topic)
 	}
@@ -241,7 +257,7 @@ func (gi *goInstance) processResult(msgInput pulsar.Message, output []byte) {
 			Payload: output,
 		}
 		// Attempt to send the message asynchronously and handle the response
-		gi.producer.SendAsync(context.Background(), asyncMsg, func(message pulsar.ProducerMessage, e error) {
+		gi.producer.SendAsync(context.Background(), &asyncMsg, func(messageID pulsar.MessageID, message *pulsar.ProducerMessage, e error) {
 			if e != nil {
 				if autoAck && atLeastOnce {
 					gi.nackInputMessage(msgInput)
