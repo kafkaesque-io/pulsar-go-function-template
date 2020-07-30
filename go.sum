@@ -36,6 +36,7 @@ github.com/apache/pulsar/pulsar-client-go v0.0.0-20190320194916-f03971cb5b4f/go.
 github.com/apache/pulsar/pulsar-function-go v0.0.0-20200729173644-89b2effee264 h1:/mdKsxXXHhcRzIln67xWanMDQZ5ZIKjxgRrMpX5qL08=
 github.com/apache/pulsar/pulsar-function-go v0.0.0-20200730010626-2bba620fb47a h1:4QNZfBjLORZvaM4XP852Rep2SXEK3Tb33E1J7U1OFv0=
 github.com/apache/pulsar/pulsar-function-go v0.0.0-20200730030110-3b41dced1e10 h1:Kf3AyUadW2N1ityprKAtzyAB60yjKgrFSEqd83Fm/FE=
+github.com/apache/pulsar/pulsar-function-go v0.0.0-20200730032336-c7dc7824ddd5 h1:7JW2Ut6HV9EZ+aWwfW1WIkTTMx9X5hVE0EYHXUE6z0U=
 github.com/ardielle/ardielle-go v1.5.2 h1:TilHTpHIQJ27R1Tl/iITBzMwiUGSlVfiVhwDNGM3Zj4=
 github.com/ardielle/ardielle-go v1.5.2/go.mod h1:I4hy1n795cUhaVt/ojz83SNVCYIGsAFAONtv2Dr7HUI=
 github.com/ardielle/ardielle-tools v1.5.4/go.mod h1:oZN+JRMnqGiIhrzkRN9l26Cej9dEx4jeNG6A+AdkShk=

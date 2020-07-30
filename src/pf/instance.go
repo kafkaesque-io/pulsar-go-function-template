@@ -21,9 +21,7 @@ package pf
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
-	"math"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
@@ -61,7 +59,7 @@ func (gi *goInstance) startFunction(function function) error {
 		return err
 	}
 
-	fmt.Println("client and producer have been set up successfully.")
+	log.Infof("client and producer have been set up successfully.")
 	channel, err := gi.setupConsumer()
 	if err != nil {
 		log.Errorf("setup consumer failed, error is:%v", err)
@@ -76,6 +74,8 @@ func (gi *goInstance) startFunction(function function) error {
 	idleDuration := getIdleTimeout(time.Millisecond * gi.context.instanceConf.killAfterIdleMs)
 	idleTimer := time.NewTimer(idleDuration)
 	defer idleTimer.Stop()
+
+	log.Infof("idle timer expires in %v", idleDuration)
 
 CLOSE:
 	for {
@@ -104,6 +104,7 @@ CLOSE:
 			gi.processResult(msgInput, output)
 
 		case <-idleTimer.C:
+			log.Infof("idleTimer expires and exit the process")
 			close(channel)
 			break CLOSE
 		}
@@ -115,20 +116,18 @@ CLOSE:
 }
 
 func (gi *goInstance) setupClient() error {
-	fmt.Println("set up pulsar client by golang function")
 	content, err := ioutil.ReadFile("/pulsar/token-superuser-stripped.jwt")
 	if err != nil {
-		fmt.Printf("read token file error %v ", err)
+		log.Errorf("read token file error %v ", err)
 	}
 	tokenStr := string(content)
 	token := pulsar.NewAuthenticationToken(tokenStr)
-	fmt.Printf("token found with length %d", len(tokenStr))
+	log.Infof("token found with length %d", len(tokenStr))
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL:            gi.context.instanceConf.pulsarServiceURL,
 		Authentication: token,
 	})
 	if err != nil {
-		fmt.Printf("create client error:%v", err)
 		log.Errorf("create client error:%v", err)
 		return err
 	}
@@ -137,10 +136,9 @@ func (gi *goInstance) setupClient() error {
 }
 
 func (gi *goInstance) setupProducer() (err error) {
-	fmt.Println("set up producer")
+	log.Infof("set up producer")
 	if gi.context.instanceConf.funcDetails.Sink.Topic != "" && len(gi.context.instanceConf.funcDetails.Sink.Topic) > 0 {
-		log.Debugf("Setting up producer for topic %s", gi.context.instanceConf.funcDetails.Sink.Topic)
-		fmt.Printf("Setting up producer for topic %s", gi.context.instanceConf.funcDetails.Sink.Topic)
+		log.Infof("Setting up producer for topic %s", gi.context.instanceConf.funcDetails.Sink.Topic)
 		properties := getProperties(getDefaultSubscriptionName(
 			gi.context.instanceConf.funcDetails.Tenant,
 			gi.context.instanceConf.funcDetails.Namespace,
@@ -155,11 +153,10 @@ func (gi *goInstance) setupProducer() (err error) {
 		})
 		if err != nil {
 			log.Errorf("create producer error:%s", err.Error())
-			fmt.Printf("create producer error:%s", err.Error())
 			return err
 		}
 	}
-	fmt.Println("producer is set up")
+	log.Infof("producer is set up")
 	return nil
 }
 
@@ -228,11 +225,10 @@ func (gi *goInstance) setupConsumer() (chan pulsar.ConsumerMessage, error) {
 		}
 
 		if err != nil {
-			fmt.Printf("create consumer error:%s", err.Error())
 			log.Errorf("create consumer error:%s", err.Error())
 			return nil, err
 		}
-		fmt.Printf("consumer subscription set up properly against the topic %s", topic)
+		log.Infof("consumer subscription set up properly against the topic %s\n", topic)
 		gi.consumers[topic] = consumer
 		gi.context.inputTopics = append(gi.context.inputTopics, topic)
 	}
@@ -285,7 +281,7 @@ func (gi *goInstance) nackInputMessage(inputMessage pulsar.Message) {
 
 func getIdleTimeout(timeoutMilliSecond time.Duration) time.Duration {
 	if timeoutMilliSecond <= 0 {
-		return time.Duration(math.MaxInt64)
+		return 24 * time.Hour
 	}
 	return timeoutMilliSecond
 }
