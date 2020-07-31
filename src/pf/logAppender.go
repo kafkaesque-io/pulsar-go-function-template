@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
-	log "github.com/kafkaesque-io/pulsar-go-function-template/src/logutil"
+	log "github.com/apache/pulsar/pulsar-function-go/logutil"
 )
 
 type LogAppender struct {
@@ -65,7 +65,7 @@ func (la *LogAppender) Append(logByte []byte) {
 	asyncMsg := pulsar.ProducerMessage{
 		Payload: logByte,
 	}
-	la.producer.SendAsync(ctx, &asyncMsg, func(messageID pulsar.MessageID, msg *pulsar.ProducerMessage, err error) {
+	la.producer.SendAsync(ctx, &asyncMsg, func(id pulsar.MessageID, message *pulsar.ProducerMessage, err error) {
 		if err != nil {
 			log.Fatal(err)
 		}
